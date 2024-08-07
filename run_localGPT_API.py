@@ -3,7 +3,7 @@ import os
 import shutil
 import subprocess
 import argparse
-
+import logging
 import torch
 from flask import Flask, jsonify, request
 from langchain.chains import RetrievalQA
@@ -69,7 +69,7 @@ DB = Chroma(
 RETRIEVER = DB.as_retriever()
 
 LLM = load_model(device_type=DEVICE_TYPE, model_id=MODEL_ID, model_basename=MODEL_BASENAME)
-prompt, memory = get_prompt_template(promptTemplate_type="llama", history=False)
+prompt, memory = get_prompt_template(promptTemplate_type="llama3", history=False)
 
 QA = RetrievalQA.from_chain_type(
     llm=LLM,
@@ -142,7 +142,7 @@ def run_ingest_route():
             client_settings=CHROMA_SETTINGS,
         )
         RETRIEVER = DB.as_retriever()
-        prompt, memory = get_prompt_template(promptTemplate_type="llama", history=False)
+        prompt, memory = get_prompt_template(promptTemplate_type="llama3", history=False)
 
         QA = RetrievalQA.from_chain_type(
             llm=LLM,
@@ -158,35 +158,48 @@ def run_ingest_route():
         return f"Error occurred: {str(e)}", 500
 
 
+logging.basicConfig(level=logging.DEBUG)
+
 @app.route("/api/prompt_route", methods=["GET", "POST"])
 def prompt_route():
     global QA
     global request_lock  # Make sure to use the global lock instance
     user_prompt = request.form.get("user_prompt")
     if user_prompt:
+        # Remove duplicate leading "<|begin_of_text|>"
+        if user_prompt.startswith("<|begin_of_text|>"):
+            user_prompt = user_prompt.replace("<|begin_of_text|>", "", 1)
+        
         # Acquire the lock before processing the prompt
+        logging.debug("Attempting to acquire lock")
         with request_lock:
-            print(f'User Prompt: {user_prompt}')              
-            # Get the answer from the chain
-            res = QA(user_prompt)
-            answer, docs = res["result"], res["source_documents"]
+            logging.debug("Lock acquired")
+            print(f'User Prompt: {user_prompt}')
+            try:
+                print("Calling QA function...")
+                # Get the answer from the chain
+                res = QA(user_prompt)
+                print("QA function returned.")
+                answer, docs = res["result"], res["source_documents"]
 
-            prompt_response_dict = {
-                "Prompt": user_prompt,
-                "Answer": answer,
-            }
+                prompt_response_dict = {
+                    "Prompt": user_prompt,
+                    "Answer": answer,
+                }
 
-            prompt_response_dict["Sources"] = []
-            for document in docs:
-                prompt_response_dict["Sources"].append(
-                    (os.path.basename(str(document.metadata["source"])), str(document.page_content))
-                )
-
-        return jsonify(prompt_response_dict), 200
+                prompt_response_dict["Sources"] = []
+                for document in docs:
+                    prompt_response_dict["Sources"].append(document)
+                
+                return jsonify(answer)
+            except Exception as e:
+                logging.error(f"Error occurred: {str(e)}")
+                return f"Error occurred: {str(e)}", 500
+            finally:
+                logging.debug("Releasing lock")
     else:
-        return "No user prompt received", 400
-
-
+        return "No prompt provided", 400
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=5110, help="Port to run the API on. Defaults to 5110.")
