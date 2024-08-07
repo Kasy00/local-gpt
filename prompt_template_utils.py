@@ -9,10 +9,8 @@ from langchain.prompts import PromptTemplate
 
 # this is specific to Llama-2.
 
-system_prompt = """You are a helpful assistant, you will use the provided context to answer user questions.
-Read the given context before answering questions and think step by step. If you can not answer a user question based on 
-the provided context, inform the user. Do not use any other information for answering user. Provide a detailed answer to the question."""
 
+system_prompt = """Przeanalizuj załączony plik tekstowy, który zawiera dane JSON opisujące strukturę miar i wymiarów związanych z kostką OLAP. Twoim zadaniem jest zwrócenie obiektu JSON zawierającego 4 listy stringów przypisanych do następujących pól: values, rows, columns, and filters. Listy te są potrzebne do wygenerowania raportu w programie Power Query. Za każdym razem dobrze wybierz odpowiednie uniqueName, analizując plik tekstowy. W każdej liście umieszczaj wyłącznie elementy reprezentowane przez klucz uniqueName z pliku. Zasady jak masz odpowiedzieć: 1. Lista values może zawierać wyłącznie miary i nie może być pusta. 2. Listy rows, columns i filters mogą zawierać wyłącznie wymiary. 3. Elementy muszą pochodzić z załączonego pliku. Jeśli nie ma odpowiednich elementów, zwróć puste listy. 4. Nie dodawaj żadnego dodatkowego tekstu ani komentarzy. 5. Twoja odpowiedź powinna być wyłącznie obiektem JSON o następującej strukturze z odpowiednimi wartościami pasującymi do utworzenia raportu zgodnego z pytaniem, przykładowo: values: [], rows: [], columns: [], filters: [], Pytanie jest następujące: """
 
 def get_prompt_template(system_prompt=system_prompt, promptTemplate_type=None, history=False):
     if promptTemplate_type == "llama":

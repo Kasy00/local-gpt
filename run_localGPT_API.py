@@ -166,7 +166,7 @@ def prompt_route():
     if user_prompt:
         # Acquire the lock before processing the prompt
         with request_lock:
-            # print(f'User Prompt: {user_prompt}')              
+            print(f'User Prompt: {user_prompt}')              
             # Get the answer from the chain
             res = QA(user_prompt)
             answer, docs = res["result"], res["source_documents"]
