@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import argparse
 import logging
+import time
 import torch
 from flask import Flask, jsonify, request
 from langchain.chains import RetrievalQA
@@ -112,29 +113,26 @@ def save_document_route():
         file.save(file_path)
         return "File saved successfully", 200
 
-
+def is_file_in_use(filepath):
+    try:
+        os.rename(filepath, filepath)
+        return False
+    except OSError:
+        return True
+    
 @app.route("/api/run_ingest", methods=["GET"])
 def run_ingest_route():
     global DB
     global RETRIEVER
     global QA
     try:
-        if os.path.exists(PERSIST_DIRECTORY):
-            try:
-                shutil.rmtree(PERSIST_DIRECTORY)
-            except OSError as e:
-                print(f"Error: {e.filename} - {e.strerror}.")
-        else:
-            print("The directory does not exist")
-
-        run_langest_commands = ["python", "ingest.py"]
-        if DEVICE_TYPE == "cpu":
-            run_langest_commands.append("--device_type")
-            run_langest_commands.append(DEVICE_TYPE)
+        # Always run with --device_type cpu
+        run_langest_commands = ["python", "ingest.py", "--device_type", "cpu"]
 
         result = subprocess.run(run_langest_commands, capture_output=True)
         if result.returncode != 0:
             return "Script execution failed: {}".format(result.stderr.decode("utf-8")), 500
+
         # load the vectorstore
         DB = Chroma(
             persist_directory=PERSIST_DIRECTORY,
@@ -156,7 +154,6 @@ def run_ingest_route():
         return "Script executed successfully: {}".format(result.stdout.decode("utf-8")), 200
     except Exception as e:
         return f"Error occurred: {str(e)}", 500
-
 
 logging.basicConfig(level=logging.DEBUG)
 
