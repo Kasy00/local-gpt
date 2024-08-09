@@ -161,7 +161,8 @@ logging.basicConfig(level=logging.DEBUG)
 def prompt_route():
     global QA
     global request_lock  # Make sure to use the global lock instance
-    user_prompt = request.form.get("user_prompt")
+    data = request.get_json()
+    user_prompt = data.get("user_prompt")
     if user_prompt:
         # Remove duplicate leading "<|begin_of_text|>"
         if user_prompt.startswith("<|begin_of_text|>"):
@@ -203,7 +204,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--host",
         type=str,
-        default="0.0.0.0",
+        default="127.0.0.1",
         help="Host to run the UI on. Defaults to 127.0.0.1. "
         "Set to 0.0.0.0 to make the UI externally "
         "accessible from other devices.",

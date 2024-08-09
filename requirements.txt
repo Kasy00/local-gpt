@@ -10,6 +10,7 @@ transformers
 protobuf==3.20.2; sys_platform != 'darwin'
 protobuf==3.20.2; sys_platform == 'darwin' and platform_machine != 'arm64'
 protobuf==3.20.3; sys_platform == 'darwin' and platform_machine == 'arm64'
+auto_gptq
 auto-gptq==0.6.0; sys_platform != 'darwin'
 docx2txt
 unstructured
