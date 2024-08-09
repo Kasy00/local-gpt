@@ -163,11 +163,7 @@ def prompt_route():
     global request_lock  # Make sure to use the global lock instance
     data = request.get_json()
     user_prompt = data.get("user_prompt")
-    if user_prompt:
-        # Remove duplicate leading "<|begin_of_text|>"
-        if user_prompt.startswith("<|begin_of_text|>"):
-            user_prompt = user_prompt.replace("<|begin_of_text|>", "", 1)
-        
+    if user_prompt:      
         # Acquire the lock before processing the prompt
         logging.debug("Attempting to acquire lock")
         with request_lock:
@@ -189,6 +185,7 @@ def prompt_route():
                 for document in docs:
                     prompt_response_dict["Sources"].append(document)
                 
+                print(answer)
                 return jsonify(answer)
             except Exception as e:
                 logging.error(f"Error occurred: {str(e)}")
